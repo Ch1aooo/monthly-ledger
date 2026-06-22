@@ -568,9 +568,21 @@
     }
 
     .history-row {
-      grid-template-columns: minmax(130px, 1.2fr) repeat(5, minmax(90px, 0.8fr));
+      grid-template-columns: minmax(130px, 1.2fr) repeat(5, minmax(90px, 0.8fr)) 42px;
     }
 
+    .history-delete {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 0;
+      background: rgba(175, 79, 79, 0.12);
+      color: var(--red);
+      cursor: pointer;
+      font-size: 18px;
+      display: grid;
+      place-items: center;
+    }
     .history-row.header, .help-row.header {
       background: #ececea;
       color: #4c5055;
@@ -847,7 +859,7 @@
       .entry-row { grid-template-columns: minmax(0, 1fr) 112px 42px; }
       .money-row, .history-row, .help-row { grid-template-columns: 1fr; }
       .metrics, .board-grid, .legacy { grid-template-columns: 1fr; }
-      .history-row.header, .help-row.header { display: none; }
+    .history-row.header, .help-row.header { display: none; }
       .split-editor { grid-template-columns: 34px 1fr 86px 42px; }
       .modal { padding: 10px; }
     }
@@ -1012,7 +1024,6 @@
       date.setMonth(date.getMonth() - 1);
       return isoDate(date);
     }
-
 
     function nextMonthDate(value) {
       const date = new Date(`${value}T12:00:00`);
@@ -1456,23 +1467,41 @@
     function renderHistoryTable() {
       const table = document.getElementById("historyTable");
       table.innerHTML = "";
-      table.append(historyRow(["月份", "账期", "基本日均", "衣食开销", "收入", "大开销"], true));
+      table.append(historyRow(["月份", "账期", "基本日均", "衣食开销", "收入", "大开销", "操作"], true));
       const periods = [...(state.data.history || [])].reverse();
       if (periods.length === 0) {
-        table.append(historyRow(["暂无记录", "先保存初始快照，下个月结账后会出现在这里。", "--", "--", "--", "--"]));
+        table.append(historyRow(["暂无记录", "先保存初始快照，下个月结账后会出现在这里。", "--", "--", "--", "--", ""]));
       } else {
         periods.forEach(period => {
-          table.append(historyRow([
+          const row = historyRow([
             period.name,
             `${period.start} → ${period.end} (${period.days}天)`,
             fmtNum(period.daily),
             fmt(period.living),
             fmt(period.income),
             fmt(period.big)
-          ]));
+          ]);
+          const action = document.createElement("div");
+          const remove = document.createElement("button");
+          remove.className = "history-delete";
+          remove.type = "button";
+          remove.title = "删除这条历史记录";
+          remove.textContent = "×";
+          remove.addEventListener("click", () => deleteHistoryPeriod(period.end));
+          action.append(remove);
+          row.append(action);
+          table.append(row);
         });
       }
       document.getElementById("legacyTable").innerHTML = "";
+    }
+
+    function deleteHistoryPeriod(endDate) {
+      if (!confirm(`删除 ${endDate} 的历史记录吗？其他月份不会受影响。`)) return;
+      state.data.history = (state.data.history || []).filter(period => period.end !== endDate);
+      save();
+      renderHistoryTable();
+      showToast("该月历史记录已删除");
     }
     function historyRow(items, header = false) {
       const row = document.createElement("div");
