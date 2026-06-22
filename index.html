@@ -1207,7 +1207,8 @@
           placeholder: "0.00",
           onInput: event => {
             state.data.accounts[key].amount = event.target.value;
-            afterChange(true);
+            event.target.classList.toggle("changed", isChanged(event.target.value, account.carry));
+            afterChange();
           }
         });
         const carry = document.createElement("div");
@@ -1250,13 +1251,19 @@
         row.className = "entry-row";
         const original = seed[key === "incomes" ? "carryIncome" : "carryBigExpenses"][index];
         const changed = original && (String(item.name) !== String(original.name) || parseAmount(item.amount) !== parseAmount(original.amount));
+        const updateChangedState = event => {
+          const currentOriginal = seed[key === "incomes" ? "carryIncome" : "carryBigExpenses"][index];
+          const isRowChanged = !currentOriginal || String(state.data[key][index].name) !== String(currentOriginal.name) || parseAmount(state.data[key][index].amount) !== parseAmount(currentOriginal.amount);
+          event.target.closest(".entry-row").querySelectorAll(".mini-input").forEach(field => field.classList.toggle("changed", isRowChanged));
+          afterChange();
+        };
         const name = input(item.name, {
           className: `mini-input ${changed ? "changed" : ""}`,
           inputMode: "text",
           placeholder: namePlaceholder,
           onInput: event => {
             state.data[key][index].name = event.target.value;
-            afterChange(true);
+            updateChangedState(event);
           }
         });
         const amount = input(item.amount, {
@@ -1264,7 +1271,7 @@
           placeholder: amountPlaceholder,
           onInput: event => {
             state.data[key][index].amount = event.target.value;
-            afterChange(true);
+            updateChangedState(event);
           }
         });
         const remove = document.createElement("button");
@@ -1853,9 +1860,3 @@
   </script>
 </body>
 </html>
-
-
-
-
-
-
